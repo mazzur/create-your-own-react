@@ -51,7 +51,6 @@ describe('ReactDOM', () => {
     });
 
     it('should RE-MOUNT subtree if element type changed', () => {
-
         class HighlightedParagraph extends React.Component {
             render() {
                 return <b>{this.props.innerText}</b>;

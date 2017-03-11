@@ -1,5 +1,5 @@
-import InternalComponent from './InternalComponent';
 import {reactComponentKey} from './reactComponentKey';
+import internalComponentFactory from './internalComponentFactory';
 
 function getMountedRootComponent(container) {
     return container.firstChild && container.firstChild[reactComponentKey];
@@ -20,7 +20,7 @@ const ReactDOM = {
             }
         }
 
-        const rootInternalComponent = new InternalComponent(reactElement, true);
+        const rootInternalComponent = internalComponentFactory.createInternalComponent(reactElement, true);
         rootInternalComponent.mount(container);
     }
 };
