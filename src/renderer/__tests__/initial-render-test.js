@@ -40,11 +40,11 @@ describe('ReactDOM', () => {
     });
 
     it('should apply props to functional react components', () => {
-        const MyParagraph = ({className, innerText}) => <p className={className}>{innerText}</p>;
+        const MyParagraph = ({className, innerText}) => <div><div><p className={className}>{innerText}</p></div></div>;
         const myParagraphReactElement = <MyParagraph className={className} innerText={innerText}/>;
         ReactDOM.render(myParagraphReactElement, container);
-        expect(container.firstChild.className).toBe(className);
-        expect(container.firstChild.innerHTML).toBe(innerText);
+        expect(container.firstChild.firstChild.firstChild.className).toBe(className);
+        expect(container.firstChild.firstChild.firstChild.innerHTML).toBe(innerText);
     });
 
     it('should apply props to react class components', () => {
