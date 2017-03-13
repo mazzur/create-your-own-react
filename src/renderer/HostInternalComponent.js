@@ -1,5 +1,6 @@
 import {reactComponentKey} from './reactComponentKey';
 import internalComponentFactory from './internalComponentFactory';
+import shouldUpdateInternalInstance from './shouldUpdateInternalInstance';
 
 const RESERVED_PROPS = {
     children: true
@@ -29,7 +30,7 @@ export default class HostInternalComponent {
             this._mountChildren(props.children);
         }
         this._applyPropsToCurrentNode(props);
-        this._insertNodeIntoContainer(container, insertBefore);
+        this._insertNodeIntoContainer(insertBefore);
 
         if (this._isRoot) {
             this._currentNode[reactComponentKey] = this;
@@ -42,6 +43,10 @@ export default class HostInternalComponent {
         if (props.children) {
             this._updateChildInstances(props.children);
         }
+    }
+
+    unmount() {
+        this._currentNode.remove();
     }
 
     _mountChildren(children) {
@@ -59,7 +64,7 @@ export default class HostInternalComponent {
     _insertNodeIntoContainer(insertBefore) {
         const currentNode = this._currentNode;
         const container = this._currentContainer;
-        if (insertBefore) {
+        if (insertBefore !== undefined) {
             container.insertBefore(currentNode, container.children[insertBefore]);
         } else {
             container.appendChild(currentNode);
@@ -81,9 +86,10 @@ export default class HostInternalComponent {
             const childReactElements = Array.isArray(children) ? children : [children];
             this._currentChildInternalComponentInstances.forEach((childInternalComponentInstance, i) => {
                 const childReactElement = childReactElements[i];
-                if (childInternalComponentInstance._currentReactElement.type === childReactElement.type) {
+                if (shouldUpdateInternalInstance(childInternalComponentInstance._currentReactElement, childReactElement)) {
                     childInternalComponentInstance.update(childReactElement);
                 } else {
+                    this._currentChildInternalComponentInstances[i].unmount();
                     const currentChildInternalInstance = this._currentChildInternalComponentInstances[i] = internalComponentFactory.createInternalComponent(childReactElement);
                     currentChildInternalInstance.mount(this._currentNode, true, i);
                 }

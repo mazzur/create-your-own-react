@@ -1,8 +1,15 @@
 import {reactComponentKey} from './reactComponentKey';
 import internalComponentFactory from './internalComponentFactory';
+import shouldUpdateInternalInstance from './shouldUpdateInternalInstance';
 
 function getMountedRootComponent(container) {
     return container.firstChild && container.firstChild[reactComponentKey];
+}
+
+function getPublicInstance(internalComponent) {
+    return internalComponent._currentPublicComponentInstance
+        || internalComponent._currentNode
+        || null
 }
 
 const ReactDOM = {
@@ -14,14 +21,18 @@ const ReactDOM = {
                 return;
             }
 
-            if (currentRootReactElement.type === reactElement.type) {
+            if (shouldUpdateInternalInstance(currentRootReactElement, reactElement)) {
                 mountedRootInternalComponent.update(reactElement);
-                return;
+                return getPublicInstance(mountedRootInternalComponent);
+            } else {
+                mountedRootInternalComponent.unmount();
             }
         }
 
         const rootInternalComponent = internalComponentFactory.createInternalComponent(reactElement, true);
         rootInternalComponent.mount(container);
+
+        return getPublicInstance(rootInternalComponent);
     }
 };
 

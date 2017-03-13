@@ -1,6 +1,7 @@
 import {reactComponentKey} from './reactComponentKey';
 import BaseComponent from '../isomorphic/BaseComponent';
 import internalComponentFactory from './internalComponentFactory';
+import shouldUpdateInternalInstance from './shouldUpdateInternalInstance';
 
 const PUBLIC_COMPONENT_TYPES = {
     PURE_FUNCTION: 'PURE_FUNCTION',
@@ -26,12 +27,16 @@ export default class InternalComponent {
         this._currentComponentType = null;
     }
 
-    mount(container) {
-        const {type, props} = this._currentReactElement
+    mount(container, preserveChildren, insertBefore) {
+        const {type, props} = this._currentReactElement;
         this._currentContainer = container;
 
         if (type.prototype instanceof BaseComponent) {
             this._currentPublicComponentInstance = new type(props);
+            const componentWIllMountHook = this._currentPublicComponentInstance.componentWillMount;
+            if (componentWIllMountHook) {
+                componentWIllMountHook();
+            }
             this._currentChildInternalComponentInstance = internalComponentFactory.createInternalComponent(this._currentPublicComponentInstance.render());
             this._currentComponentType = PUBLIC_COMPONENT_TYPES.IMPURE_CLASS;
         } else {
@@ -39,10 +44,14 @@ export default class InternalComponent {
             this._currentComponentType = PUBLIC_COMPONENT_TYPES.PURE_FUNCTION;
         }
 
-        this._currentChildInternalComponentInstance.mount(container);
+        this._currentChildInternalComponentInstance.mount(container, preserveChildren, insertBefore);
 
         if (this._isRoot) {
             linkHostNodeToComponent(this, this);
+        }
+
+        if (this._currentPublicComponentInstance && this._currentPublicComponentInstance.componentDidMount) {
+            this._currentPublicComponentInstance.componentDidMount();
         }
     }
 
@@ -57,11 +66,22 @@ export default class InternalComponent {
             newChildReactElement = this._currentPublicComponentInstance.render();
         }
 
-        if (newChildReactElement.type === this._currentChildInternalComponentInstance._currentReactElement.type) {
+        if (shouldUpdateInternalInstance(this._currentChildInternalComponentInstance._currentReactElement, newChildReactElement)) {
             this._currentChildInternalComponentInstance.update(newChildReactElement);
         } else {
+            this._currentChildInternalComponentInstance.unmount();
             this._currentChildInternalComponentInstance = internalComponentFactory.createInternalComponent(newChildReactElement);
             this._currentChildInternalComponentInstance.mount(this._currentContainer);
         }
+    }
+
+    unmount() {
+        const willUnmountHook = this._currentPublicComponentInstance && this._currentPublicComponentInstance.componentWillUnmount;
+
+        if (willUnmountHook) {
+            willUnmountHook();
+        }
+
+        this._currentChildInternalComponentInstance.unmount();
     }
 }
