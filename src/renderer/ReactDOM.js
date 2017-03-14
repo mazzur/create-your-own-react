@@ -3,7 +3,7 @@ import internalComponentFactory from './internalComponentFactory';
 import shouldUpdateInternalInstance from './shouldUpdateInternalInstance';
 
 function getMountedRootComponent(container) {
-    return container.firstChild && container.firstChild[reactComponentKey];
+    return container[reactComponentKey];
 }
 
 function getPublicInstance(internalComponent) {
@@ -29,8 +29,9 @@ const ReactDOM = {
             }
         }
 
-        const rootInternalComponent = internalComponentFactory.createInternalComponent(reactElement, true);
+        const rootInternalComponent = internalComponentFactory.createInternalComponent(reactElement);
         rootInternalComponent.mount(container);
+        container[reactComponentKey] = rootInternalComponent;
 
         return getPublicInstance(rootInternalComponent);
     }

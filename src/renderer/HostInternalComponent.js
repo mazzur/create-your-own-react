@@ -1,4 +1,3 @@
-import {reactComponentKey} from './reactComponentKey';
 import internalComponentFactory from './internalComponentFactory';
 import shouldUpdateInternalInstance from './shouldUpdateInternalInstance';
 
@@ -7,8 +6,7 @@ const RESERVED_PROPS = {
 };
 
 export default class HostInternalComponent {
-    constructor(reactElement, isRoot) {
-        this._isRoot = isRoot;
+    constructor(reactElement) {
         this._currentContainer = null;
         this._currentReactElement = reactElement;
 
@@ -31,10 +29,6 @@ export default class HostInternalComponent {
         }
         this._applyPropsToCurrentNode(props);
         this._insertNodeIntoContainer(insertBefore);
-
-        if (this._isRoot) {
-            this._currentNode[reactComponentKey] = this;
-        }
     }
 
     update(newReactElement) {
@@ -50,7 +44,7 @@ export default class HostInternalComponent {
     }
 
     _mountChildren(children) {
-        if (typeof children === 'string') {
+        if (typeof children === 'string' || typeof children === 'number') {
             this._currentNode.textContent = children;
         } else {
             this._currentChildInternalComponentInstances = (Array.isArray(children) ? children : [children])
@@ -80,7 +74,7 @@ export default class HostInternalComponent {
     }
 
     _updateChildInstances(children) {
-        if (typeof children === 'string') {
+        if (typeof children === 'string' || typeof children === 'number') {
             this._currentNode.textContent = children;
         } else {
             const childReactElements = Array.isArray(children) ? children : [children];
