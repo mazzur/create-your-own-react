@@ -1,70 +1,94 @@
-import {reactComponentKey} from './reactComponentKey';
 import BaseComponent from '../isomorphic/BaseComponent';
 import internalComponentFactory from './internalComponentFactory';
 import shouldUpdateInternalInstance from './shouldUpdateInternalInstance';
+import componentInstanceMap from '../isomorphic/componentInstanceMap';
 
-const PUBLIC_COMPONENT_TYPES = {
-    PURE_FUNCTION: 'PURE_FUNCTION',
-    IMPURE_CLASS: 'IMPURE_CLASS'
+function StatelessComponent(Component) {
+}
+
+StatelessComponent.prototype.render = function () {
+    const Component = componentInstanceMap.get(this)._currentReactElement.type;
+    return Component(this.props);
 };
 
-function linkHostNodeToComponent(internalInstance, rootInternalInstance) {
-    if (internalInstance._currentNode) {
-        internalInstance._currentNode[reactComponentKey] = rootInternalInstance;
+function initializePublicComponent(type, props) {
+    if (type.prototype instanceof BaseComponent) {
+        return new type(props);
     } else {
-        linkHostNodeToComponent(internalInstance._currentChildInternalComponentInstance, rootInternalInstance);
+        return new StatelessComponent(type);
     }
 }
 
 export default class InternalComponent {
-    constructor(reactElement, isRoot) {
-        this._isRoot = isRoot;
+    constructor(reactElement) {
         this._currentContainer = null;
         this._currentReactElement = reactElement;
 
         this._currentPublicComponentInstance = null;
         this._currentChildInternalComponentInstance = null;
-        this._currentComponentType = null;
+
+        this._pendingState = [];
     }
 
     mount(container, preserveChildren, insertBefore) {
         const {type, props} = this._currentReactElement;
         this._currentContainer = container;
 
-        if (type.prototype instanceof BaseComponent) {
-            this._currentPublicComponentInstance = new type(props);
-            const componentWIllMountHook = this._currentPublicComponentInstance.componentWillMount;
-            if (componentWIllMountHook) {
-                componentWIllMountHook();
-            }
-            this._currentChildInternalComponentInstance = internalComponentFactory.createInternalComponent(this._currentPublicComponentInstance.render());
-            this._currentComponentType = PUBLIC_COMPONENT_TYPES.IMPURE_CLASS;
-        } else {
-            this._currentChildInternalComponentInstance = internalComponentFactory.createInternalComponent(type(props));
-            this._currentComponentType = PUBLIC_COMPONENT_TYPES.PURE_FUNCTION;
-        }
+        const inst = this._currentPublicComponentInstance = initializePublicComponent(type, props);
+        componentInstanceMap.set(inst, this);
 
+        inst.props = props;
+        inst.state = inst.state || {};
+        this._prevState = inst.state;
+
+        if (inst.componentWillMount) {
+            inst.componentWillMount.call(inst);
+        }
+        if (this._nextState) {
+            inst.state = this._nextState;
+        }
+        this._currentChildInternalComponentInstance = internalComponentFactory.createInternalComponent(inst.render());
         this._currentChildInternalComponentInstance.mount(container, preserveChildren, insertBefore);
 
-        if (this._isRoot) {
-            linkHostNodeToComponent(this, this);
-        }
-
-        if (this._currentPublicComponentInstance && this._currentPublicComponentInstance.componentDidMount) {
-            this._currentPublicComponentInstance.componentDidMount();
+        if (inst.componentDidMount) {
+            inst.componentDidMount.call(inst);
         }
     }
 
-    update(newReactElement) {
-        const {type, props} = newReactElement;
+    update(nextReactElement) {
+        const prevReactElement = this._currentReactElement;
+        const nextProps = nextReactElement.props;
+        const currentInst = this._currentPublicComponentInstance;
+        this._prevState = currentInst.state;
+        this._nextState = this._nextState || currentInst.state;
+
+        const willReceive = nextReactElement !== prevReactElement;
+        if (willReceive) {
+            if (currentInst.componentWillReceiveProps) {
+                currentInst.componentWillReceiveProps.call(currentInst, nextProps);
+            }
+        }
+
+        let shouldUpdate = currentInst.shouldComponentUpdate
+            ? currentInst.shouldComponentUpdate.call(currentInst, nextProps, this._nextState)
+            : true;
+        if (shouldUpdate) {
+            this._performUpdate(prevReactElement, nextReactElement);
+        }
+    }
+
+    _performUpdate(prevReactElement, nextReactElement) {
+        const nextProps = nextReactElement.props;
+        const currentInst = this._currentPublicComponentInstance;
         let newChildReactElement;
 
-        if (this._currentComponentType === PUBLIC_COMPONENT_TYPES.PURE_FUNCTION) {
-            newChildReactElement = type(props);
-        } else if (this._currentComponentType === PUBLIC_COMPONENT_TYPES.IMPURE_CLASS) {
-            this._currentPublicComponentInstance.props = props;
-            newChildReactElement = this._currentPublicComponentInstance.render();
+        if (currentInst.componentWillUpdate) {
+            currentInst.componentWillUpdate.call(currentInst, nextProps, this._nextState);
         }
+
+        currentInst.state = this._nextState;
+        currentInst.props = nextProps;
+        newChildReactElement = currentInst.render();
 
         if (shouldUpdateInternalInstance(this._currentChildInternalComponentInstance._currentReactElement, newChildReactElement)) {
             this._currentChildInternalComponentInstance.update(newChildReactElement);
@@ -73,13 +97,25 @@ export default class InternalComponent {
             this._currentChildInternalComponentInstance = internalComponentFactory.createInternalComponent(newChildReactElement);
             this._currentChildInternalComponentInstance.mount(this._currentContainer);
         }
+
+        if (currentInst.componentDidUpdate) {
+            currentInst.componentDidUpdate.call(currentInst, prevReactElement.props, this._prevState);
+        }
+    }
+
+    handleStateChange() {
+        this._pendingState.forEach((partialState) => {
+            this._nextState = Object.assign({}, this._currentPublicComponentInstance.state, partialState);
+        });
+        this._pendingState.length = 0;
+        if (this._currentChildInternalComponentInstance) {
+            this.update(this._currentReactElement);
+        }
     }
 
     unmount() {
-        const willUnmountHook = this._currentPublicComponentInstance && this._currentPublicComponentInstance.componentWillUnmount;
-
-        if (willUnmountHook) {
-            willUnmountHook();
+        if (this._currentPublicComponentInstance.componentWillUnmount) {
+            this._currentPublicComponentInstance.componentWillUnmount.call(this._currentPublicComponentInstance);
         }
 
         this._currentChildInternalComponentInstance.unmount();

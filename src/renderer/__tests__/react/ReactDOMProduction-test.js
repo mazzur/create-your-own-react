@@ -88,42 +88,42 @@ describe('ReactDOM', () => {
         ]);
         log = [];
 
-        // inst.setState({y: 2});
-        // expect(log).toEqual([
-        //     ['shouldComponentUpdate', {x: 1}, {y: 2}],
-        //     ['componentWillUpdate', {x: 1}, {y: 2}],
-        //     ['render'],
-        //     ['componentDidUpdate', {x: 1}, {y: 1}],
-        // ]);
+        inst.setState({y: 2});
+        expect(log).toEqual([
+            ['shouldComponentUpdate', {x: 1}, {y: 2}],
+            ['componentWillUpdate', {x: 1}, {y: 2}],
+            ['render'],
+            ['componentDidUpdate', {x: 1}, {y: 1}],
+        ]);
         log = [];
 
-        // inst.setState({y: 2});
-        // expect(log).toEqual([
-        //     ['shouldComponentUpdate', {x: 1}, {y: 2}],
-        // ]);
-        // log = [];
-        //
-        // ReactDOM.render(
-        //     <Component x={2} />,
-        //     container
-        // );
-        // expect(log).toEqual([
-        //     ['componentWillReceiveProps', {x: 2}],
-        //     ['shouldComponentUpdate', {x: 2}, {y: 2}],
-        //     ['componentWillUpdate', {x: 2}, {y: 2}],
-        //     ['render'],
-        //     ['componentDidUpdate', {x: 1}, {y: 2}],
-        // ]);
-        // log = [];
-        //
-        // ReactDOM.render(
-        //     <Component x={2} />,
-        //     container
-        // );
-        // expect(log).toEqual([
-        //     ['componentWillReceiveProps', {x: 2}],
-        //     ['shouldComponentUpdate', {x: 2}, {y: 2}],
-        // ]);
+        inst.setState({y: 2});
+        expect(log).toEqual([
+            ['shouldComponentUpdate', {x: 1}, {y: 2}],
+        ]);
+        log = [];
+
+        ReactDOM.render(
+            <Component x={2} />,
+            container
+        );
+        expect(log).toEqual([
+            ['componentWillReceiveProps', {x: 2}],
+            ['shouldComponentUpdate', {x: 2}, {y: 2}],
+            ['componentWillUpdate', {x: 2}, {y: 2}],
+            ['render'],
+            ['componentDidUpdate', {x: 1}, {y: 2}],
+        ]);
+        log = [];
+
+        ReactDOM.render(
+            <Component x={2} />,
+            container
+        );
+        expect(log).toEqual([
+            ['componentWillReceiveProps', {x: 2}],
+            ['shouldComponentUpdate', {x: 2}, {y: 2}],
+        ]);
         // log = [];
 
         // ReactDOM.unmountComponentAtNode(container);

@@ -1,4 +1,3 @@
-import {reactComponentKey} from './reactComponentKey';
 import internalComponentFactory from './internalComponentFactory';
 import shouldUpdateInternalInstance from './shouldUpdateInternalInstance';
 
@@ -7,8 +6,7 @@ const RESERVED_PROPS = {
 };
 
 export default class HostInternalComponent {
-    constructor(reactElement, isRoot) {
-        this._isRoot = isRoot;
+    constructor(reactElement) {
         this._currentContainer = null;
         this._currentReactElement = reactElement;
 
@@ -31,10 +29,6 @@ export default class HostInternalComponent {
         }
         this._applyPropsToCurrentNode(props);
         this._insertNodeIntoContainer(insertBefore);
-
-        if (this._isRoot) {
-            this._currentNode[reactComponentKey] = this;
-        }
     }
 
     update(newReactElement) {
