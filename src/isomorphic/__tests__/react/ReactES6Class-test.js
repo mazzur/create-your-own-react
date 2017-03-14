@@ -98,28 +98,6 @@ describe('BaseComponent', () => {
         expect(renderedName).toBe('bar');
     });
 
-    it('should not implicitly bind event handlers', () => {
-        class Foo extends React.Component {
-            constructor(props) {
-                super(props);
-                this.state = {bar: props.initialValue};
-            }
-            handleClick() {
-                this.setState({bar: 'bar'});
-            }
-            render() {
-                return (
-                    <Inner
-                        name={this.state.bar}
-                        onClick={this.handleClick}
-                    />
-                );
-            }
-        }
-        test(<Foo initialValue="foo" />, 'DIV', 'foo');
-        expect(attachedListener).toThrow();
-    });
-
     it('will call all the normal life cycle methods', () => {
         var lifeCycles = [];
         class Foo extends React.Component {

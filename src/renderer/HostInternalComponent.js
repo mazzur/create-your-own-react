@@ -44,7 +44,7 @@ export default class HostInternalComponent {
     }
 
     _mountChildren(children) {
-        if (typeof children === 'string') {
+        if (typeof children === 'string' || typeof children === 'number') {
             this._currentNode.textContent = children;
         } else {
             this._currentChildInternalComponentInstances = (Array.isArray(children) ? children : [children])
@@ -74,7 +74,7 @@ export default class HostInternalComponent {
     }
 
     _updateChildInstances(children) {
-        if (typeof children === 'string') {
+        if (typeof children === 'string' || typeof children === 'number') {
             this._currentNode.textContent = children;
         } else {
             const childReactElements = Array.isArray(children) ? children : [children];
