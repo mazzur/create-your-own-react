@@ -1,6 +1,8 @@
 import {reactComponentKey} from './reactComponentKey';
 import internalComponentFactory from './internalComponentFactory';
 import shouldUpdateInternalInstance from './shouldUpdateInternalInstance';
+import ReactBatchingStrategy from './ReactBatchingStrategy';
+import ReactReconcileTransaction from './ReactReconcileTransaction';
 
 function getMountedRootComponent(container) {
     return container[reactComponentKey];
@@ -22,7 +24,8 @@ const ReactDOM = {
             }
 
             if (shouldUpdateInternalInstance(currentRootReactElement, reactElement)) {
-                mountedRootInternalComponent.update(reactElement);
+                const reactReconcileTransaction = new ReactReconcileTransaction();
+                reactReconcileTransaction.perform(mountedRootInternalComponent.update.bind(mountedRootInternalComponent), null, reactReconcileTransaction, reactElement);
                 return getPublicInstance(mountedRootInternalComponent);
             } else {
                 mountedRootInternalComponent.unmount();
@@ -30,10 +33,15 @@ const ReactDOM = {
         }
 
         const rootInternalComponent = internalComponentFactory.createInternalComponent(reactElement);
-        rootInternalComponent.mount(container);
+        ReactBatchingStrategy.batchedUpdates(batchedMountComponent);
         container[reactComponentKey] = rootInternalComponent;
 
         return getPublicInstance(rootInternalComponent);
+
+        function batchedMountComponent() {
+            const reactReconcileTransaction = new ReactReconcileTransaction();
+            reactReconcileTransaction.perform(rootInternalComponent.mount.bind(rootInternalComponent), null, reactReconcileTransaction, container);
+        }
     }
 };
 

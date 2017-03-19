@@ -1,13 +1,17 @@
 import componentInstanceMap from './componentInstanceMap';
+import ReactUpdates from '../renderer/ReactUpdates';
 
 export default class BaseComponent {
     constructor(props) {
         this.props = props;
     }
 
-    setState(newState) {
+    setState(newState, callback) {
         const internalInstance = componentInstanceMap.get(this);
         internalInstance._pendingState.push(newState);
-        internalInstance.handleStateChange();
+        if (callback) {
+            internalInstance._pendingCallbacks.push(callback);
+        }
+        ReactUpdates.enqueueUpdate(internalInstance);
     }
 }

@@ -2,7 +2,8 @@ import internalComponentFactory from './internalComponentFactory';
 import shouldUpdateInternalInstance from './shouldUpdateInternalInstance';
 
 const RESERVED_PROPS = {
-    children: true
+    children: true,
+    ref: true
 };
 
 export default class HostInternalComponent {
@@ -13,7 +14,7 @@ export default class HostInternalComponent {
         this._currentNode = null;
     }
 
-    mount(container, preserveChildren, insertBefore) {
+    mount(reactReconcileTransaction, container, preserveChildren, insertBefore) {
         const {type, props} = this._currentReactElement;
         if (container.lastChild && !preserveChildren) {
             while (container.lastChild) {
@@ -25,17 +26,21 @@ export default class HostInternalComponent {
         this._currentNode = document.createElement(type);
 
         if (props.children) {
-            this._mountChildren(props.children);
+            this._mountChildren(reactReconcileTransaction, props.children);
         }
         this._applyPropsToCurrentNode(props);
         this._insertNodeIntoContainer(insertBefore);
+        const ref = this._currentReactElement.props.ref;
+        if (ref) {
+            ref(this._currentNode);
+        }
     }
 
-    update(newReactElement) {
+    update(reactReconcileTransaction, newReactElement) {
         const {props} = newReactElement;
         this._applyPropsToCurrentNode(props);
         if (props.children) {
-            this._updateChildInstances(props.children);
+            this._updateChildInstances(reactReconcileTransaction, props.children);
         }
     }
 
@@ -43,14 +48,14 @@ export default class HostInternalComponent {
         this._currentNode.remove();
     }
 
-    _mountChildren(children) {
+    _mountChildren(reactReconcileTransaction, children) {
         if (typeof children === 'string' || typeof children === 'number') {
             this._currentNode.textContent = children;
         } else {
             this._currentChildInternalComponentInstances = (Array.isArray(children) ? children : [children])
                 .map((childReactElement) => internalComponentFactory.createInternalComponent(childReactElement));
             this._currentChildInternalComponentInstances.forEach((childInternalComponentInstance) => {
-                childInternalComponentInstance.mount(this._currentNode, true);
+                childInternalComponentInstance.mount(reactReconcileTransaction, this._currentNode, true);
             });
         }
     }
@@ -73,7 +78,7 @@ export default class HostInternalComponent {
         }
     }
 
-    _updateChildInstances(children) {
+    _updateChildInstances(reactReconcileTransaction, children) {
         if (typeof children === 'string' || typeof children === 'number') {
             this._currentNode.textContent = children;
         } else {
@@ -81,11 +86,11 @@ export default class HostInternalComponent {
             this._currentChildInternalComponentInstances.forEach((childInternalComponentInstance, i) => {
                 const childReactElement = childReactElements[i];
                 if (shouldUpdateInternalInstance(childInternalComponentInstance._currentReactElement, childReactElement)) {
-                    childInternalComponentInstance.update(childReactElement);
+                    childInternalComponentInstance.update(reactReconcileTransaction, childReactElement);
                 } else {
                     this._currentChildInternalComponentInstances[i].unmount();
                     const currentChildInternalInstance = this._currentChildInternalComponentInstances[i] = internalComponentFactory.createInternalComponent(childReactElement);
-                    currentChildInternalInstance.mount(this._currentNode, true, i);
+                    currentChildInternalInstance.mount(reactReconcileTransaction, this._currentNode, true, i);
                 }
             });
         }
