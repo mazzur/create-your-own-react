@@ -1,4 +1,4 @@
-
+Repo used to re-implement essential react internals in order to learn its inner working.
 
 ##### Steps (in respective branches)
 ###### 1-initial-render-only
